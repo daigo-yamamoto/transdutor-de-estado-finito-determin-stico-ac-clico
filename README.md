@@ -1,0 +1,1 @@
+# transdutor-de-estado-finito-determin-stico-ac-clico
