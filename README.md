@@ -26,7 +26,17 @@ A parte central dos algoritmos de minimização de autômatos é a classificaç�
 
 Vamos realizar a minimização do trie usando o algoritmo de Hopcroft e Ullman e Watson. Para o primeiro passo, pares de esados onde um é final e o outro não, podem ser imediatamente marcados como pertencendo a diferentes classes de equivalência. Pares de estados que têm um número diferente de transições de saída ou o mesmo número, mas com rótulos diferentes, também podem ser marcados como pertencendo a diferentes classes de equivalência. Finalmente, pares de estados que tem transições rotuladas com os mesmos símbolos, mas levando a estados diferentes que ja foram considerados, podem ser marcados como pertencendo a classes de equivalência diferentes.
 
-Vamos percorrer a trie com o pós-ordem e ver como a partição pode ser realizada. Começamos com a folha, voltando pelo trie até o estado inicial. 
+Vamos percorrer a trie com o pós-ordem e ver como a partição pode ser realizada. Começamos com a folha, voltando pelo trie até o estado inicial. O estado que está sendo analisado pertence à mesma classe que um representante de uma classe ja analisado se, e somente se:
+
+1. Eles são ambos finais ou ambos não-finais
+2. Eles têm o mesmo númeor de transições de saída
+3. Transições correspondentes têm os mesmos rótulos
+4. Transições correspondentes levam aos mesmos estados
+5. Estados alcançáveis via transições de saída são os únicos representantes de suas classes
+
+Se todas as condições são satisfeitas, o estado é substituido pelo estado equivalente encontrado no registro. Note que todas as folhas pertencem à mesma classe de equivalência. Se alguma das condições não são satisfeitas, o estado deve ser um representante de uma nova classe de equivalência e colocado no registro.
+
+Para construirmos o dicionário uma palavra de cada vez, precisamos mesclar o processo de adicionar novas palavras ao dicionário com o processo de minimização. Mas quais estados estão sujeitas a mudanças quando novas palavras são adicionadas? E existe uma maneira de adicionar novas palavras ao dicionário de tal forma que minimizaremos o númeor de estados que podem precisar ser alterados após a adição de uma palavra? Note que se a entrada estiver ordenada, apenas os estados que precisam ser atravessados para aceitar as palavras aneriores adicionadas ao dicionário podem mudar quando uma nova palavra é adicionada, e o resto do dicionário permanece inalterado.
 
 
 
