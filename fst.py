@@ -149,7 +149,3 @@ def create_fst(input):  #input é uma lista de palavras
     # here we are minimizing the states of the last word
     for i in range(len(currentWord), 0, -1):
         set_transition(tempState[i-1], previousWord[i-1], find_minimized(outList, tempState[i]))
-
-    initialState = find_minimized(outList, tempState[0])
-
-    return initialState, outList
