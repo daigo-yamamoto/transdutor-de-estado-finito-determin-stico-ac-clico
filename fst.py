@@ -1,6 +1,13 @@
+import copy
+from graphviz import Digraph
+
 class FstNode:
+    _id_counter = 0  # Contador estático para gerar IDs únicos
+
     def __init__(self):
-        self.next = []  # Lista de tuplas (prox estado, char, '')
+        self.id = FstNode._id_counter  # Atribui um ID único a cada estado
+        FstNode._id_counter += 1
+        self.next = []
         self.output = []
         self.is_end_of_word = False
 
@@ -87,7 +94,7 @@ def create_fst(input):  #input é uma lista de palavras
     outList = []
     maxWordSize = 0
 
-    for string in list:  # Procurando a maior palavra
+    for string in input:  # Procurando a maior palavra
         if len(string) > maxWordSize:
             maxWordSize = len(string)
 
@@ -149,3 +156,48 @@ def create_fst(input):  #input é uma lista de palavras
     # here we are minimizing the states of the last word
     for i in range(len(currentWord), 0, -1):
         set_transition(tempState[i-1], previousWord[i-1], find_minimized(outList, tempState[i]))
+
+    initialState = find_minimized(outList, tempState[0])
+
+    return initialState, outList
+
+def fst_to_graphviz(initial_state):
+    dot = Digraph(comment='Finite State Transducer')
+    visited_states = set()  # Para manter o controle dos estados já visitados
+
+    def add_node_to_graph(state):
+        if state in visited_states:
+            return
+
+        visited_states.add(state)
+        state_id = str(id(state))
+        dot.node(state_id, shape='doublecircle' if state.is_end_of_word else 'circle')
+
+        for next_state, char, output in state.next:
+            if next_state is not None:
+                next_state_id = str(id(next_state))
+                label = f"{char}/{output}"
+                dot.edge(state_id, next_state_id, label=label)
+                add_node_to_graph(next_state)
+
+    add_node_to_graph(initial_state)
+    return dot
+
+def read_words_from_file(file_path):
+    words = []
+    with open(file_path, 'r') as file:
+        for line in file:
+            word = line.strip()  # Remove espaços em branco e quebras de linha
+            if word:  # Verifica se a linha não está vazia
+                words.append(word)
+    return words
+
+
+# Teste do FST
+file_path = './dicionario/semana.txt'
+word_list = read_words_from_file(file_path)
+
+estado_inicial, out = create_fst(word_list)
+dot = fst_to_graphviz(estado_inicial)
+dot.render('output/fst_graph', view=True)
+
