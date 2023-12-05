@@ -83,4 +83,4 @@ words = read_words_from_file(file_path)
 
 trie = Trie()
 build_trie(trie, words)
-trie.visualize()
+#trie.visualize()

@@ -128,7 +128,7 @@ def create_fst(input):  #input é uma lista de palavras
 
         prefixLengthPlus1 = i
 
-        # we minimize the states from the suÆx of the previous word
+        # we minimize the states from the suffix of the previous word
         for j in range(len(previousWord), prefixLengthPlus1 - 1, -1):
             set_transition(tempState[j-1], previousWord[j-1], find_minimized(outList, tempState[j]))
 
@@ -174,36 +174,35 @@ def create_fst(input):  #input é uma lista de palavras
     return initialState, outList
 
 
-def autocomplete(fst, prefix):
-    # Encontra o estado correspondente ao final do prefixo
-    def find_state_for_prefix(current_state, prefix):
-        for char in prefix:
-            next_state = None
-            for trans in current_state.next:
-                if trans[1] == char:  # Verifica se o caractere coincide com a transição
-                    next_state = trans[0]
+def autocomplete(root, prefix):
+    # Primeiro, encontramos o estado que corresponde ao último caractere do sufixo
+    def find_state(node, suffix):
+        for char in suffix:
+            next_node = None
+            for next_state, transition_char, _ in node.next:
+                if transition_char == char:
+                    next_node = next_state
                     break
-            if next_state is None:
-                return None  # Retorna None se o prefixo não estiver no FST
-            current_state = next_state
-        return current_state
+            if next_node is None:
+                return None  # Se não encontrarmos o sufixo no FST, retornamos None
+            node = next_node
+        return node
 
-    # Realiza uma busca em profundidade para encontrar todas as palavras a partir deste estado
-    def dfs(current_state, current_prefix, words):
-        if current_state.is_end_of_word:
-            words.append(current_prefix)
-        for next_state, char, _ in current_state.next:
-            if next_state is not None and char is not None:
-                dfs(next_state, current_prefix + char, words)
+    # Depois, realizamos uma busca em profundidade para encontrar todas as palavras completas
+    def dfs(node, current_word, complete_words):
+        if node.is_end_of_word:
+            complete_words.append(current_word)
+        for next_node, char, _ in node.next:
+            if char:  # Ignora transições vazias
+                dfs(next_node, current_word + char, complete_words)
 
-    # Iniciar autocompletar
-    starting_state = find_state_for_prefix(fst, prefix)
-    if starting_state is None:
-        return []  # Se o prefixo não existir, retorna uma lista vazia
+    state = find_state(root, prefix)
+    if state is None:
+        return []  # Se o sufixo não existir no FST, retorna uma lista vazia
 
-    completions = []
-    dfs(starting_state, prefix, completions)
-    return completions
+    complete_words = []
+    dfs(state, prefix, complete_words)
+    return complete_words
 
 
 def fst_to_graphviz(initial_state):
@@ -239,7 +238,7 @@ def fst_to_graphviz(initial_state):
                 if next_state not in visited_states:
                     add_node(next_state)
                 next_state_id = state_ids[next_state]
-                label = f"{char}/{output}" if char and output else char or output or 'ε'
+                label = f"{char}" if char and output else char or output or 'ε'
                 dot.edge(current_state_id, next_state_id, label=label)
 
     return dot
@@ -256,15 +255,24 @@ def read_words_from_file(file_path):
 
 
 # Teste do FST
-file_path = './dicionario/meses.txt'
+file_path = './dicionario/teste.txt'
 word_list = read_words_from_file(file_path)
 
 estado_inicial, out = create_fst(word_list)
 
 # Desenhando os automatos
-#dot = fst_to_graphviz(estado_inicial)
-#dot.render('output/fst_graph', view=True)
+# dot = fst_to_graphviz(estado_inicial)
+# dot.render('output/fst_graph', view=True)
 
 # Testando o autocomplete manualmente
 completions = autocomplete(estado_inicial, 'ja')
 print(completions)
+
+# Printando os estados
+def print_final(estado_inicial):
+    for estado, ch, _ in estado_inicial.next:
+        if estado:
+            print(estado.is_end_of_word)
+            print_final(estado)
+
+print_final(estado_inicial)
