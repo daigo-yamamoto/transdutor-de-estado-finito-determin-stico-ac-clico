@@ -4,8 +4,7 @@ import tkinter as tk
 from tkinter import scrolledtext
 import time
 import tracemalloc
-import unicodedata
-import string
+import levenshein
 
 def read_words_from_file(file_path):
     words = []
@@ -53,11 +52,30 @@ def update_results():
     trie_time_label.config(text=f"Tempo do TRIE: {trie_time:.6f} seg")
     trie_memory_label.config(text=f"Memória do TRIE: {trie_memory} bytes")
 
+    # Obter a distância de Levenshtein
+    try:
+        levenshtein_distance = int(levenshtein_entry.get())
+    except ValueError:
+        levenshtein_distance = 0  # Ou trate o erro conforme necessário
+
+    # Medir o tempo e a memória para o FST com Levenshtein
+    tracemalloc.start()
+    start_time = time.time()
+    fst_levenshtein_results = levenshein.autocomplete_with_levenshtein(my_fst, prefix, levenshtein_distance)
+    fst_levenshtein_time = time.time() - start_time
+    _, fst_levenshtein_memory = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+
+    # Atualizar a área de texto para resultados do FST com Levenshtein
+    fst_levenshtein_text.delete('1.0', tk.END)
+    fst_levenshtein_text.insert(tk.END, '\n'.join(fst_levenshtein_results))
+
+
 window = tk.Tk()
 window.title("Autocompletar com FST e TRIE")
 
 # Pegando as palavras
-file_path = './dicionario/american-english.txt'
+file_path = './dicionario/semana.txt'
 words = read_words_from_file(file_path)
 
 # Criando a fst
@@ -73,6 +91,12 @@ prefix_label.pack()
 prefix_entry = tk.Entry(window)
 prefix_entry.pack()
 
+# Adicionar uma entrada para a distância de Levenshtein
+levenshtein_label = tk.Label(window, text="Distância de Levenshtein:")
+levenshtein_label.pack()
+levenshtein_entry = tk.Entry(window)
+levenshtein_entry.pack()
+
 # Área de texto para resultados do FST
 fst_label = tk.Label(window, text="Resultados do FST:")
 fst_label.pack()
@@ -84,6 +108,12 @@ trie_label = tk.Label(window, text="Resultados do TRIE:")
 trie_label.pack()
 trie_text = scrolledtext.ScrolledText(window, height=10)
 trie_text.pack()
+
+# Área de texto para resultados do FST com Levenshtein
+fst_levenshtein_label = tk.Label(window, text="Resultados do FST com Levenshtein:")
+fst_levenshtein_label.pack()
+fst_levenshtein_text = scrolledtext.ScrolledText(window, height=10)
+fst_levenshtein_text.pack()
 
 # Rótulos para exibir o tempo e a memória do FST
 fst_time_label = tk.Label(window, text="Tempo do FST:")

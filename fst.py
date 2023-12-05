@@ -1,7 +1,7 @@
 import copy
 from graphviz import Digraph
 from queue import Queue
-
+import levenshein
 
 class FstNode:
     def __init__(self):
@@ -266,7 +266,7 @@ def read_words_from_file(file_path):
 
 
 # Teste do FST
-#file_path = './dicionario/semana.txt'
+#file_path = './dicionario/meses.txt'
 #word_list = read_words_from_file(file_path)
 
 #estado_inicial, out = create_fst(word_list)
@@ -278,6 +278,8 @@ def read_words_from_file(file_path):
 # Testando o autocomplete manualmente
 #completions = autocomplete(estado_inicial, 'ja')
 #print(completions)
+
+# print(levenshein.autocomplete_with_levenshtein(estado_inicial, 'ja', 2))
 
 # Printando os estados
 #def print_final(estado_inicial):
