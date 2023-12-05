@@ -75,7 +75,7 @@ window = tk.Tk()
 window.title("Autocompletar com FST e TRIE")
 
 # Pegando as palavras
-file_path = './dicionario/semana.txt'
+file_path = './dicionario/american-english.txt'
 words = read_words_from_file(file_path)
 
 # Criando a fst

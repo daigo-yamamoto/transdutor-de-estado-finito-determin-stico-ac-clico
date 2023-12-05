@@ -9,6 +9,13 @@ class FstNode:
         self.output = []
         self.is_end_of_word = False
 
+    def hashable_state(self):
+        # Cria uma representação hashable do estado
+        transitions = tuple((char, id(next_state)) for next_state, char, _ in self.next)
+        # Certifique-se de que self.output seja uma lista antes de convertê-lo para tupla
+        output_tuple = tuple(self.output) if self.output is not None else tuple()
+        return (transitions, output_tuple, self.is_end_of_word)
+
 
 def longest_common_prefix(str1, str2):
     min_length = min(len(str1), len(str2))
@@ -77,35 +84,19 @@ def clear_state(state):
     state.is_end_of_word = False
 
 
-def member(list, state):
-    # Criar um dicionário para contar a frequência dos elementos em state.next
-    state_freq = {}
-    for item in state.next:
-        state_freq[item] = state_freq.get(item, 0) + 1
+def member(state_dict, state):
+    # Usa a representação hashable para verificar a presença do estado
+    hashable = state.hashable_state()
+    return state_dict.get(hashable)
 
-    for element in list:
-        # Se os tamanhos são diferentes, pula para o próximo elemento
-        if len(element.next) != len(state.next):
-            continue
-
-        # Criar um dicionário para contar a frequência dos elementos em element.next
-        element_freq = {}
-        for item in element.next:
-            element_freq[item] = element_freq.get(item, 0) + 1
-
-        # Comparar os dois dicionários
-        if state_freq == element_freq:
-            return element
-
-    return None
-
-
-def find_minimized(list, state):
-    r = member(list, state)
-    if r is None:
-        r = copy.copy(state)
-        list.append(r)
-    return r
+def find_minimized(state_dict, state):
+    hashable = state.hashable_state()
+    if hashable in state_dict:
+        return state_dict[hashable]
+    else:
+        new_state = copy.copy(state)
+        state_dict[hashable] = new_state
+        return new_state
 
 
 def create_fst(input):  #input é uma lista de palavras
@@ -113,7 +104,7 @@ def create_fst(input):  #input é uma lista de palavras
     previousWord = ''
     alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
     tempState = []
-    outList = []
+    state_dict = {}
     maxWordSize = 0
 
     for string in input:  # Procurando a maior palavra
@@ -140,7 +131,7 @@ def create_fst(input):  #input é uma lista de palavras
 
         # we minimize the states from the suffix of the previous word
         for j in range(len(previousWord), prefixLengthPlus1 - 1, -1):
-            set_transition(tempState[j-1], previousWord[j-1], find_minimized(outList, tempState[j]))
+            set_transition(tempState[j-1], previousWord[j-1], find_minimized(state_dict, tempState[j]))
 
         # This loop initializes the tail states for the current word
         for j in range(prefixLengthPlus1, len(currentWord) + 1):
@@ -178,11 +169,11 @@ def create_fst(input):  #input é uma lista de palavras
 
     # here we are minimizing the states of the last word
     for i in range(len(currentWord), 0, -1):
-        set_transition(tempState[i-1], previousWord[i-1], find_minimized(outList, tempState[i]))
+        set_transition(tempState[i-1], previousWord[i-1], find_minimized(state_dict, tempState[i]))
 
-    initialState = find_minimized(outList, tempState[0])
+    initialState = find_minimized(state_dict, tempState[0])
 
-    return initialState, outList
+    return initialState, state_dict
 
 
 def autocomplete(root, prefix):
