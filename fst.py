@@ -1,15 +1,14 @@
 import copy
 from graphviz import Digraph
+from queue import Queue
+
 
 class FstNode:
-    _id_counter = 0  # Contador estático para gerar IDs únicos
-
     def __init__(self):
-        self.id = FstNode._id_counter  # Atribui um ID único a cada estado
-        FstNode._id_counter += 1
         self.next = []
         self.output = []
         self.is_end_of_word = False
+
 
 def longest_common_prefix(str1, str2):
     min_length = min(len(str1), len(str2))
@@ -22,13 +21,16 @@ def longest_common_prefix(str1, str2):
             break
     return common_prefix
 
+
 def final(state):
     return state.is_end_of_word
+
 
 def set_final(state, bool):
     if bool:
         state.next = [(None, None, '')]
     state.is_end_of_word = bool
+
 
 def transition(state, char):
     final_state = None
@@ -36,6 +38,7 @@ def transition(state, char):
         if next_state[1] == char:
             final_state = state.next[state.next.index(next_state)][0]
         return final_state
+
 
 def set_transition(initial_state, char, final_state):
     for next_state in initial_state.next:
@@ -45,11 +48,14 @@ def set_transition(initial_state, char, final_state):
 
     initial_state.next.append((final_state, char, ''))
 
+
 def state_output(state):
     return state.output
 
+
 def set_state_output(state, list):
     state.output = list
+
 
 def output(state, char):
     string = ''
@@ -58,15 +64,18 @@ def output(state, char):
             string = state.next[state.next.index(next_state)][2]
         return string
 
+
 def set_output(state, char, string):
     for next_state in state.next:
         if next_state[1] == char:
             state.next[state.next.index(next_state)] = state.next[state.next.index(next_state)][:2] + (string, )
 
+
 def clear_state(state):
     state.next = []
     state.output = []
     state.is_end_of_word = False
+
 
 def member(list, state):
     final_state = None
@@ -80,12 +89,15 @@ def member(list, state):
                 final_state = element
     return final_state
 
+
 def find_minimized(list, state):
     r = member(list, state)
     if r is None:
         r = copy.copy(state)
         list.append(r)
     return r
+
+
 def create_fst(input):  #input é uma lista de palavras
     currentWord = ''
     previousWord = ''
@@ -117,7 +129,7 @@ def create_fst(input):  #input é uma lista de palavras
         prefixLengthPlus1 = i
 
         # we minimize the states from the suÆx of the previous word
-        for j in range(len(previousWord), prefixLengthPlus1, -1):
+        for j in range(len(previousWord), prefixLengthPlus1 - 1, -1):
             set_transition(tempState[j-1], previousWord[j-1], find_minimized(outList, tempState[j]))
 
         # This loop initializes the tail states for the current word
@@ -161,27 +173,77 @@ def create_fst(input):  #input é uma lista de palavras
 
     return initialState, outList
 
+
+def autocomplete(fst, prefix):
+    # Encontra o estado correspondente ao final do prefixo
+    def find_state_for_prefix(current_state, prefix):
+        for char in prefix:
+            next_state = None
+            for trans in current_state.next:
+                if trans[1] == char:  # Verifica se o caractere coincide com a transição
+                    next_state = trans[0]
+                    break
+            if next_state is None:
+                return None  # Retorna None se o prefixo não estiver no FST
+            current_state = next_state
+        return current_state
+
+    # Realiza uma busca em profundidade para encontrar todas as palavras a partir deste estado
+    def dfs(current_state, current_prefix, words):
+        if current_state.is_end_of_word:
+            words.append(current_prefix)
+        for next_state, char, _ in current_state.next:
+            if next_state is not None and char is not None:
+                dfs(next_state, current_prefix + char, words)
+
+    # Iniciar autocompletar
+    starting_state = find_state_for_prefix(fst, prefix)
+    if starting_state is None:
+        return []  # Se o prefixo não existir, retorna uma lista vazia
+
+    completions = []
+    dfs(starting_state, prefix, completions)
+    return completions
+
+
 def fst_to_graphviz(initial_state):
     dot = Digraph(comment='Finite State Transducer')
-    visited_states = set()  # Para manter o controle dos estados já visitados
+    visited_states = set()  # Conjunto de estados visitados
+    state_queue = Queue()   # Fila para a busca em largura
+    state_ids = {}          # Dicionário para mapear estados para IDs
+    next_id = 0             # Contador para gerar IDs sequenciais
 
-    def add_node_to_graph(state):
+    # Função auxiliar para adicionar um nó ao gráfico
+    def add_node(state):
         if state in visited_states:
             return
 
+        nonlocal next_id
+        state_id = str(next_id)
+        state_ids[state] = state_id
+        next_id += 1
+        # Verifica se o estado é um estado final (is_end_of_word == True)
+        node_shape = 'doublecircle' if state.is_end_of_word else 'circle'
+        dot.node(state_id, label=state_id, shape=node_shape)
         visited_states.add(state)
-        state_id = str(id(state))
-        dot.node(state_id, shape='doublecircle' if state.is_end_of_word else 'circle')
+        state_queue.put(state)
 
-        for next_state, char, output in state.next:
+    add_node(initial_state)  # Inicia a travessia pelo estado inicial
+
+    while not state_queue.empty():
+        current_state = state_queue.get()
+        current_state_id = state_ids[current_state]
+
+        for next_state, char, output in current_state.next:
             if next_state is not None:
-                next_state_id = str(id(next_state))
-                label = f"{char}/{output}"
-                dot.edge(state_id, next_state_id, label=label)
-                add_node_to_graph(next_state)
+                if next_state not in visited_states:
+                    add_node(next_state)
+                next_state_id = state_ids[next_state]
+                label = f"{char}/{output}" if char and output else char or output or 'ε'
+                dot.edge(current_state_id, next_state_id, label=label)
 
-    add_node_to_graph(initial_state)
     return dot
+
 
 def read_words_from_file(file_path):
     words = []
@@ -194,10 +256,15 @@ def read_words_from_file(file_path):
 
 
 # Teste do FST
-file_path = './dicionario/semana.txt'
+file_path = './dicionario/meses.txt'
 word_list = read_words_from_file(file_path)
 
 estado_inicial, out = create_fst(word_list)
-dot = fst_to_graphviz(estado_inicial)
-dot.render('output/fst_graph', view=True)
 
+# Desenhando os automatos
+#dot = fst_to_graphviz(estado_inicial)
+#dot.render('output/fst_graph', view=True)
+
+# Testando o autocomplete manualmente
+completions = autocomplete(estado_inicial, 'ja')
+print(completions)
