@@ -78,16 +78,26 @@ def clear_state(state):
 
 
 def member(list, state):
-    final_state = None
+    # Criar um dicionário para contar a frequência dos elementos em state.next
+    state_freq = {}
+    for item in state.next:
+        state_freq[item] = state_freq.get(item, 0) + 1
+
     for element in list:
-        p=[]
-        if len(element.next) == len(state.next):
-            for i in range(0, len(state.next)):
-                if state.next[i] in element.next:
-                    p.append(1)
-            if len(p) == len(element.next):
-                final_state = element
-    return final_state
+        # Se os tamanhos são diferentes, pula para o próximo elemento
+        if len(element.next) != len(state.next):
+            continue
+
+        # Criar um dicionário para contar a frequência dos elementos em element.next
+        element_freq = {}
+        for item in element.next:
+            element_freq[item] = element_freq.get(item, 0) + 1
+
+        # Comparar os dois dicionários
+        if state_freq == element_freq:
+            return element
+
+    return None
 
 
 def find_minimized(list, state):
@@ -123,7 +133,7 @@ def create_fst(input):  #input é uma lista de palavras
         i_out = i_out + 1
         i = 1
 
-        while (i < len(currentWord)) and (i < len(previousWord)) and (previousWord[i - 1] == currentWord[i - 1]):
+        while (i <= len(currentWord)) and (i <= len(previousWord)) and (previousWord[i - 1] == currentWord[i - 1]):
             i = i + 1
 
         prefixLengthPlus1 = i
@@ -152,8 +162,9 @@ def create_fst(input):  #input é uma lista de palavras
 
             if final(tempState[j]):
                 tempSet = []
-                for tempString in state_output(tempState[j]):
-                    tempSet.append(wordSuffix + tempString)
+                if state_output(tempState[j]):
+                    for tempString in state_output(tempState[j]):
+                        tempSet.append(wordSuffix + tempString)
                 set_state_output(tempState[j], tempSet)
 
             currentOutput = currentOutput.replace(commonPrefix, '')
@@ -255,24 +266,24 @@ def read_words_from_file(file_path):
 
 
 # Teste do FST
-file_path = './dicionario/teste.txt'
-word_list = read_words_from_file(file_path)
+#file_path = './dicionario/semana.txt'
+#word_list = read_words_from_file(file_path)
 
-estado_inicial, out = create_fst(word_list)
+#estado_inicial, out = create_fst(word_list)
 
 # Desenhando os automatos
-# dot = fst_to_graphviz(estado_inicial)
-# dot.render('output/fst_graph', view=True)
+#dot = fst_to_graphviz(estado_inicial)
+#dot.render('output/fst_graph_semana', view=True)
 
 # Testando o autocomplete manualmente
-completions = autocomplete(estado_inicial, 'ja')
-print(completions)
+#completions = autocomplete(estado_inicial, 'ja')
+#print(completions)
 
 # Printando os estados
-def print_final(estado_inicial):
-    for estado, ch, _ in estado_inicial.next:
-        if estado:
-            print(estado.is_end_of_word)
-            print_final(estado)
+#def print_final(estado_inicial):
+#    for estado, ch, _ in estado_inicial.next:
+#        if estado:
+#            print(estado.is_end_of_word)
+#            print_final(estado)
 
-print_final(estado_inicial)
+#print_final(estado_inicial)

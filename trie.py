@@ -60,7 +60,7 @@ class Trie:
 
         add_nodes_and_edges(self.root)
 
-        dot.render('output/fst_graph', view=True)
+        dot.render('output/trie_graph_meses', view=True)
 
 def read_words_from_file(file_path):
     words = []
@@ -78,9 +78,9 @@ def build_trie(trie, words):
 '''
   Teste da trie
 '''
-file_path = './dicionario/meses.txt'
-words = read_words_from_file(file_path)
+#file_path = './dicionario/meses.txt'
+#words = read_words_from_file(file_path)
 
-trie = Trie()
-build_trie(trie, words)
+#trie = Trie()
+#build_trie(trie, words)
 #trie.visualize()

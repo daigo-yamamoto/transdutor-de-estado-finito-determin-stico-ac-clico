@@ -4,15 +4,15 @@ import tkinter as tk
 from tkinter import scrolledtext
 import time
 import tracemalloc
+import unicodedata
+import string
 
 def read_words_from_file(file_path):
     words = []
     with open(file_path, 'r') as file:
-        for line in file:
-            word = line.strip()  # Remove espaços em branco e quebras de linha
-            if word:  # Verifica se a linha não está vazia
-                words.append(word)
-    return words
+        for word in file:
+            words.append(word.strip())
+    return words  # Ordena a lista de palavras
 
 
 def update_results():
@@ -57,7 +57,7 @@ window = tk.Tk()
 window.title("Autocompletar com FST e TRIE")
 
 # Pegando as palavras
-file_path = './dicionario/meses.txt'
+file_path = './dicionario/american-english.txt'
 words = read_words_from_file(file_path)
 
 # Criando a fst
